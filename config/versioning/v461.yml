@@ -1,0 +1,100 @@
+# Source structure/defaults from repo3/contracts/task.py and ontology/package.yml.
+# These are mappings, not approved test assertions or Golden Truth.
+schema_version: "1"
+version_id: V4.6.1
+requirement_aliases: [V4.1]
+documents:
+  capabilities: capabilities.yml
+  metrics: metrics.yml
+  object_types: object_types.yml
+  dimensions: dimensions.yml
+  links: links.yml
+  recipes: recipes.yml
+  package: package.yml
+capability_id_template: "question_{question_ref}"
+fanout_modes: {none: false, per_scope: true, per_month: true}
+capability_defaults: {fanout: none, metric_mode: refs}
+# Select source-declared availability only; never reinterpret this as runtime proof.
+exposed_statuses: [AVAILABLE]
+# Explicitly declared by metrics.supported_dimensions; absent from dimensions.yml.
+# This registers the source ID only; no calendar or aggregation rule is inferred.
+additional_dimension_ids: [year_month]
+capability_limitations:
+  - declared_status_is_not_runtime_or_signoff_verification
+  - filter_axes_not_explicitly_declared
+  - time_ops_only_include_explicit_metric_operators
+  - dimensions_are_a_union_not_a_compatibility_matrix
+  - set_operations_not_explicitly_declared_by_capability
+sequence_operator: sequence
+plan_step_defaults: {depends_on: [], consumes: [], emits: null, purpose: "", subjects_from_set: null, filters_from_set: null, filter_dims: [], label: "", final: true, view: {}}
+filter_operators:
+  eq: {operator: eq, negated: false, fields: [value_text]}
+  ne: {operator: eq, negated: true, fields: [value_text]}
+  in: {operator: in, negated: false, fields: [values_text]}
+  not_in: {operator: in, negated: true, fields: [values_text]}
+  between: {operator: between, negated: false, fields: [range_low, range_high]}
+  gt: {operator: gt, negated: false, fields: [value_text]}
+  gte: {operator: gte, negated: false, fields: [value_text]}
+  lt: {operator: lt, negated: false, fields: [value_text]}
+  lte: {operator: lte, negated: false, fields: [value_text]}
+  contains: {operator: contains, negated: false, fields: [value_text]}
+task_defaults:
+  intent: query
+  subjects: []
+  metrics: []
+  filters: []
+  group_by: []
+  params: {}
+  percentiles: []
+  output_kind: scalar
+relation_defaults: {direction: FORWARD, scope: any, project_to_target: false}
+time_defaults: {grain: month, op: total}
+order_defaults: {direction: desc}
+
+# Explicit canonical vocabulary; unknown source operations/arguments fail closed.
+capability_operators:
+  aggregate: aggregate
+  category_listing: category_listing
+  compare: compare
+  cooccurrence: cooccurrence
+  diagnose: diagnose
+  differentiation: differentiation
+  distribution: distribution
+  enumerate: enumerate
+  feature_bundles: feature_bundles
+  feature_gap: feature_gap
+  fitment_split: fitment_split
+  forecast: forecast
+  latest_price: latest_price
+  lookup: lookup
+  query: query
+  rank: rank
+  ratio: ratio
+  set_algebra: set_algebra
+  similarity: similarity
+  since_launch: since_launch
+  traverse: traverse
+  trend: trend
+task_operators:
+  query: query
+  rank: rank
+  enumerate: enumerate
+  traverse: traverse
+  compare: compare
+  distribution: distribution
+  set_algebra: set_algebra
+output_kinds:
+  scalar: scalar
+  series: series
+  group_rows: table
+  object_list: object_list
+  distribution: distribution
+traversal_directions:
+  FORWARD: forward
+  REVERSE: reverse
+relation_scopes:
+  any: any
+  counted: counted
+  standard: standard
+  optional: optional
+argument_names: {}

@@ -1,0 +1,59 @@
+# PRD examples, NOT approved business truth. Rate uses percent units here.
+schema_version: "1"
+compatibility_rules: []
+test_rules:
+  - rule_id: installation_rate_range
+    description: "PRD candidate: installation rate in percent is within [0, 100]"
+    approval: proposed
+    approved_by: null
+    category: property
+    preconditions: {metric: installation_rate, unit: percent}
+    assertion:
+      kind: numeric_range
+      value: installation_rate
+      minimum: 0
+      maximum: 100
+      include_minimum: true
+      include_maximum: true
+  - rule_id: top_n_max_count
+    description: "PRD candidate: TopN count does not exceed requested N"
+    approval: proposed
+    approved_by: null
+    category: property
+    preconditions: {}
+    assertion: {kind: count_limit, items: top_n, limit: requested_n}
+  - rule_id: top_n_subset
+    description: "PRD candidate: TopN is contained in its source set"
+    approval: proposed
+    approved_by: null
+    category: property
+    preconditions: {}
+    assertion: {kind: subset, subset: top_n, superset: source_set}
+  - rule_id: unknown_not_zero
+    description: "PRD candidate: unknown representation differs from zero"
+    approval: proposed
+    approved_by: null
+    category: property
+    preconditions: {}
+    assertion: {kind: distinct, left: unknown_value, right: zero_value}
+  - rule_id: object_set_containment
+    description: "PRD candidate: subsequent query remains within source ObjectSet"
+    approval: proposed
+    approved_by: null
+    category: property
+    preconditions: {}
+    assertion: {kind: subset, subset: queried_objects, superset: source_objects}
+  - rule_id: intersection_subset
+    description: "PRD candidate: A intersect B is contained in A"
+    approval: proposed
+    approved_by: null
+    category: property
+    preconditions: {}
+    assertion: {kind: subset, subset: intersection, superset: set_a}
+  - rule_id: difference_disjoint
+    description: "PRD candidate: A minus B is disjoint from B"
+    approval: proposed
+    approved_by: null
+    category: property
+    preconditions: {}
+    assertion: {kind: disjoint, left: difference, right: set_b}

@@ -1,0 +1,26 @@
+{
+    "task_id": "repo4-to-repo3-example",
+    "intent": "query",
+    "subjects": [
+        {
+            "text": "大众",
+            "kind_hint": "车型"
+        }
+    ],
+    "metrics": [
+        "销量"
+    ],
+    "time": {
+        "text": "2025年",
+        "grain": "year",
+        "op": "total"
+    },
+    "output_kind": "scalar",
+    "security_context": {
+        "principal_id": "repo4",
+        "tenant_id": "vida",
+        "roles": [
+            "analyst"
+        ]
+    }
+}

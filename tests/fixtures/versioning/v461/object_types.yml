@@ -1,0 +1,98 @@
+object_types:
+  - id: Model
+    name: 车型家族
+    aliases: [车型家族, 车型系列, model]
+    description: CPCA Key 标识的车型家族；未完成 CPCA 对接的版本不伪造 Model ID。
+    identity: {columns: [model_id], strategy: NATURAL_KEY, signoff_ref: D1_model_identity}
+    backing_dataset: obj_model
+    source_complete: false
+    display_name_property: md_model_name
+    properties: [md_model_name, md_model_name_cpca, md_brand_name, md_oem_name, md_model_name_variants]
+
+  - id: ModelVersion
+    name: 车型版本
+    aliases: [车型, 车款, 车, carline, 车系, 款型]
+    description: carline code 粒度的车型版本；年款是属性，不再参与对象身份。
+    identity: {columns: [model_version_id], strategy: NATURAL_KEY, signoff_ref: D1_model_identity}
+    backing_dataset: obj_model_version
+    source_complete: false
+    conflict_policy:
+      strategy: AUTHORITATIVE_SOURCE
+      authoritative_source: ods_model_sales
+      # 销量源没有 Brand Indicator；该属性继续来自 Feature 装配源，不能伪称由销量源权威覆盖。
+      applies_to_properties: [segment, body_type, powertrain, brand_name, oem_name]
+      ledger: true
+      signoff_ref: D3_attribute_authority
+    display_name_property: mv_carline_name
+    properties: [mv_carline_code, mv_model_year, mv_carline_name, mv_model_version, mv_brand_cn,
+                 mv_oem_cn, mv_segment, mv_bodytype, mv_powertrain, mv_brand_indicator,
+                 mv_msrp, mv_tp, mv_price_band, mv_price_as_of_month,
+                 mv_model_id, mv_model_sop_date, mv_first_sales_month]
+
+  - id: Feature
+    name: 功能
+    aliases: [功能, 配置, 特性, 功能点]
+    description: >-
+      Feature Name ID 粒度的功能目录；车型上的具体值属于装配关系。同名的多个 ID 是同一个功能概念
+      （feature_concept_key，X3）；字典未收录的 ID 取配置文件原值并标 dictionary_status=MISSING（D6）。
+    identity: {columns: [feature_id], strategy: NATURAL_KEY, signoff_ref: X3_feature_identity_stability}
+    backing_dataset: obj_feature
+    source_complete: false
+    conflict_policy:
+      strategy: AUTHORITATIVE_SOURCE
+      authoritative_source: feature_mapping.xlsx
+      applies_to_properties: [feature_name, feature_description, category_id]
+      signoff_ref: D6_feature_source_priority
+    display_name_property: ft_display_name
+    # X3：按名称匹配，同名的多个 ID 取并集；名称找不到时依次查 SAE 四、三、二、一级；
+    # 仍找不到再模糊匹配，候选带分类路径交给用户选
+    name_resolution:
+      concept_key_property: ft_concept_key
+      fallback_properties: [ft_sae_l4, ft_sae_l3, ft_sae_l2, ft_sae_l1]
+      qualifier_properties: [ft_sae_l1, ft_sae_l2, ft_sae_l3, ft_sae_l4]
+      signoff_ref: X3_feature_identity_stability
+    properties: [ft_canonical_name, ft_qualifier, ft_display_name, ft_concept_key, ft_concept_name,
+                 ft_sae_l1, ft_sae_l2, ft_sae_l3, ft_sae_l4, ft_dictionary_status]
+
+  - id: SalesObservation
+    name: 销量观测
+    aliases: [销量记录, 销量]
+    description: 一款车型版本一个自然月一行，销量使用 MIX销量并保留小数。
+    identity: {columns: [model_version_id, year_month], strategy: NATURAL_KEY, signoff_ref: D2_sales_authority}
+    backing_dataset: fact_sales
+    source_complete: true
+    properties: [so_year_month, so_sales_volume, so_tp, so_msrp]
+
+  - id: ModelSpec
+    name: 车型参数
+    aliases: [参数, 规格, 车型规格]
+    description: 车型参数分支；spec_id 使用 Feature Name ID，文本值始终保留。
+    identity: {columns: [model_version_id, spec_id], strategy: NATURAL_KEY, signoff_ref: X2_model_spec_branch}
+    backing_dataset: fact_model_spec
+    source_complete: false
+    display_name_property: sp_spec_name
+    value_property: sp_value_num
+    properties: [sp_spec_name, sp_spec_value, sp_value_num, sp_spec_unit, sp_sae_ii]
+
+  - id: SaeNode
+    name: SAE分类节点
+    aliases: [功能分类, SAE节点, 分类节点]
+    description: Category 字典展开的一至五级 SAE 路径节点；非叶节点也可以有自身 Category ID。
+    identity: {columns: [node_id], strategy: NATURAL_KEY, signoff_ref: D6_feature_source_priority}
+    backing_dataset: obj_sae_node
+    source_complete: true
+    display_name_property: sn_node_name
+    properties: [sn_node_name, sn_node_path, sn_sae_level, sn_parent_pk, sn_is_spec_branch]
+
+  - id: SoftwareRelease
+    name: 软件发布事件
+    aliases: [软件发布, 软件版本, OTA发布]
+    description: 明确 SW Release Date 的来源记录；同车型、功能、日期和版本允许多条不同装配描述。
+    identity:
+      columns: [source_record_hash]
+      strategy: SURROGATE_HASH
+      signoff_ref: D6_feature_source_priority
+    backing_dataset: event_software_release
+    source_complete: false
+    display_name_property: sr_sw_version
+    properties: [sr_sw_version, sr_release_date, sr_fitment_type, sr_feature_detail, sr_source_sota_fota]

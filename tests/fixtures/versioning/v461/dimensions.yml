@@ -1,0 +1,160 @@
+# 治理维度与治理值（I-15：维度值是治理值，不是自由文本）。
+#
+# observed_in_data 是本轮实测加的字段，用来记录「DDL 注释说有、数据里没有」的值。
+# 为什么重要：DDL 注释写 bodytype 有 Hatchback/Estate/Coupe，实测样本里
+# 只有 SUV/Sedan/MPV/SW/HB，没有全称也没有 Coupe。
+# 按注释写治理值 → 别名「掀背车」展开成 bodytype='Hatchback' → 空集
+# → 三态判 NO_DATA → 用户以为没数据，其实是枚举写错了。
+# 这与设计文档 §2.2 六个坑是同一类问题，但设计文档没列这一条。
+
+dimensions:
+  - id: brand_cn
+    name: 品牌
+    column: brand_name
+    object_type: ModelVersion
+    governed: false
+    market_scope_member: true
+    source_of_truth: ods_model_sales
+    signoff_ref: D3_attribute_authority
+    values: []
+
+  - id: oem_cn
+    name: 厂商
+    column: oem_name
+    object_type: ModelVersion
+    governed: false
+    market_scope_member: true
+    source_of_truth: ods_model_sales
+    signoff_ref: D3_attribute_authority
+    values: []
+
+  - id: segment
+    name: 级别
+    column: segment
+    object_type: ModelVersion
+    market_scope_member: true
+    source_of_truth: dm_car_model_line
+    signoff_ref: D3_attribute_authority
+    values:
+      - {value: A00, display_cn: A00 级, aliases: [微型车, A00级]}
+      - {value: A0,  display_cn: A0 级,  aliases: [小型车, A0级]}
+      - {value: A,   display_cn: A 级,   aliases: [紧凑型, 紧凑型车, A级]}
+      - {value: B,   display_cn: B 级,   aliases: [中型车, B级]}
+      - {value: C,   display_cn: C 级,   aliases: [中大型车, C级]}
+      - {value: D,   display_cn: D 级,   aliases: [大型车, D级]}
+
+  - id: bodytype
+    name: 车身形态
+    column: body_type
+    object_type: ModelVersion
+    market_scope_member: true
+    source_of_truth: dm_car_model_line
+    signoff_ref: D3_attribute_authority
+    description: >-
+      来源中的 Cabrio/Roadster 是一个完整车身形态值，不拆分。
+      Hatchback/Estate 分别规范为 HB/SW；Coupe 仍保留为未观测值。
+    values:
+      - {value: SUV,   display_cn: SUV,   aliases: [越野车, 运动型多用途车]}
+      - {value: Sedan, display_cn: 轿车,  aliases: [三厢车, 三厢轿车]}
+      - {value: MPV,   display_cn: MPV,   aliases: [多用途车, 商务车]}
+      - {value: HB,    display_cn: 两厢车, aliases: [掀背车, 两厢, Hatchback], note: 数据里是缩写 HB，不是 Hatchback}
+      - {value: SW,    display_cn: 旅行车, aliases: [瓦罐, Estate, 旅行版], note: 数据里是缩写 SW，不是 Estate}
+      - {value: Cabrio/Roadster, display_cn: 敞篷车, aliases: [敞篷车, Roadster, Cabrio]}
+      - {value: Coupe, display_cn: 轿跑,  aliases: [双门轿跑], observed_in_data: false,
+         note: DDL 注释列出但实测样本中未出现；用它筛选可能返回空集而非 NO_DATA 的真实情况}
+
+  - id: powertrain
+    name: 动力类型
+    column: powertrain
+    object_type: ModelVersion
+    market_scope_member: true
+    source_of_truth: dm_car_model_line
+    signoff_ref: D3_attribute_authority
+    values:
+      - {value: BEV,      display_cn: 纯电, aliases: [纯电动, 电动车, 电车, EV]}
+      - {value: PHEV,     display_cn: 插混, aliases: [插电混动, 插电式混合动力, 插混版]}
+      - {value: EREV,     display_cn: 增程, aliases: [增程式, 增程电动]}
+      # 「混动」不挂在这里：国内说「混动」常含插混与增程，见 lexicon.yml 的 hybrid_disambiguation
+      - {value: Hybrid,   display_cn: 油电混动, aliases: [HEV, 油混]}
+      - {value: "M Hybrid", display_cn: 轻混, aliases: [轻度混动, MHEV, 48V轻混]}
+      - {value: ICE,      display_cn: 燃油, aliases: [燃油车, 油车, 内燃机]}
+
+  - id: brand_indicator
+    name: 品牌档次
+    column: brand_indicator
+    object_type: ModelVersion
+    market_scope_member: true
+    source_of_truth: dm_car_model_line
+    signoff_ref: D3_attribute_authority
+    values:
+      - {value: Volume,  display_cn: 主流, aliases: [大众化, 走量品牌]}
+      - {value: Economy, display_cn: 经济, aliases: [入门, 低端]}
+      - {value: Premium, display_cn: 豪华, aliases: [高端, 溢价品牌]}
+
+  - id: price_band
+    name: 价格带
+    column: price_band
+    object_type: ModelVersion
+    governed: true
+    signoff_ref: D4_transaction_price
+    description: 由 Repo2 在 obj_model_version 里按 msrp 物化成列，运行时不算
+    values:
+      - {value: "0-100000",      display_cn: 10 万以下,  aliases: [十万以下, 10万内]}
+      - {value: "100000-200000", display_cn: 10-20 万,  aliases: [十到二十万, 10万-20万, 10到20万]}
+      - {value: "200000-300000", display_cn: 20-30 万,  aliases: [二十到三十万, 20万-30万, 20到30万]}
+      - {value: "300000-500000", display_cn: 30-50 万,  aliases: [三十到五十万, 30万-50万]}
+      - {value: "500000+",       display_cn: 50 万以上,  aliases: [五十万以上, 50万+]}
+
+  - id: fitment_type
+    name: 装配方式
+    column: fitment_type
+    object_type: Feature
+    values:
+      - {value: STANDARD, display_cn: 标配, aliases: [标准装备, 标准配置, 标配的]}
+      - {value: OPTIONAL, display_cn: 选配, aliases: [选装, 选装件, 可选]}
+
+  - id: sae_i
+    name: 一级功能分类
+    column: sae_i
+    object_type: Feature
+    description: >-
+      实测为双语字段。obj_feature 已按 language='CN' 过滤，所以治理值取中文。
+      D5 签认要求的「ADAS 的 sae_i 取值清单」在中文侧是「智驾」。
+    values:
+      - {value: 智驾,     display_cn: 智驾,     aliases: [智能驾驶, ADAS, 辅助驾驶, 自动驾驶]}
+      - {value: 交互,     display_cn: 交互,     aliases: [人机交互, HMI]}
+      - {value: 互联,     display_cn: 互联,     aliases: [车联网, 网联]}
+      - {value: 服务,     display_cn: 服务,     aliases: [车载服务, 生态服务]}
+      - {value: 部件,     display_cn: 部件,     aliases: [硬件, 零部件, 配置件]}
+      - {value: 车型参数, display_cn: 车型参数, aliases: [参数, 规格],
+         note: "此分支的 feature_name 是参数名、description 是参数值，语义与其它分支相反。见签认 X2"}
+      - {value: 安全,     display_cn: 安全,     aliases: [被动安全, 主动安全], observed_in_data: false}
+
+  - id: optimization
+    name: 功能状态
+    column: optimization
+    object_type: Feature
+    # 治理类维度：取值是 Tracker 的变更标记，不是用户会说的筛选条件。「默认」「新增」「优化」是日常词，
+    # 登记成精确筛选会把「默认配置」「今年新增了哪些车型」变成查询条件（V4.6 反例集）。
+    user_recallable: false
+    values:
+      - {value: Default,      display_cn: 默认}
+      - {value: "New added",  display_cn: 新增功能}
+      - {value: Optimization, display_cn: 优化功能}
+
+  # VNext：Repo2 内部 crosswalk_model_version.presence 的治理值。
+  - id: presence
+    name: 纳管状态
+    column: presence
+    object_type: ModelVersion
+    description: >-
+      身份对照表里一行车的观测覆盖：两侧都有 / 只有销量 / 只有装配。
+      实测 dm_car_feature 与 dm_car_model_line 的 carline_code 交集为 0，
+      所以真实数据上这一列几乎全是 sales_only / fitment_only —— 覆盖度必须披露。
+    # 治理类维度：给管道和覆盖度披露用，不对用户召回（「完整」「双边」是日常词）。
+    user_recallable: false
+    values:
+      - {value: both,         display_cn: 销量与装配都有}
+      - {value: sales_only,   display_cn: 只有销量}
+      - {value: fitment_only, display_cn: 只有装配}
+

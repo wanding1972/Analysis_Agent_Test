@@ -1,0 +1,806 @@
+metrics:
+- id: sales_volume
+  name: 销量
+  aliases:
+  - 销售量
+  - 上险量
+  - 卖了多少
+  - 销量水平
+  - 卖了几台
+  - 销售数量
+  - 总销量
+  - CPCA销量
+  unit: VEHICLE
+  additive: true
+  operator: aggregate
+  spec:
+    fact_link: hasSales
+    property: sales_volume
+    agg: sum
+  time_grain: month
+  measured_at: ModelVersion
+  rule_refs:
+  - R_NO_SILENT_ZERO
+  signoff_ref: D2_sales_authority
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - brand_cn
+  - oem_cn
+  - year_month
+  definition_cn: CPCA 口径月度销量求和。carline 级由 model 级按 mix 拆分，存在小数
+  default_assumption: 销量默认 CPCA 口径；答案必须披露「CPCA 口径，数据截至 X 年 X 月」
+- id: model_count
+  name: 车型数
+  aliases:
+  - 有多少款车
+  - 车型数量
+  - 几款车
+  - 款数
+  unit: COUNT
+  additive: true
+  operator: aggregate
+  spec:
+    property: pk
+    agg: count_distinct
+  time_grain: none
+  measured_at: ModelVersion
+  rule_refs:
+  - R_NO_SILENT_ZERO
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - brand_cn
+  definition_cn: 范围内不重复车型（carline × 年款）的个数
+- id: feature_installation_rate
+  name: 功能安装率
+  aliases:
+  - 安装率
+  - 装配率
+  - 搭载率
+  - 供给率
+  - 销量加权供给率
+  - 渗透率
+  - 装车率
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  - feature_id
+  operator: ratio
+  time_grain: month
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops:
+      - op: traverse
+        link: equippedWith
+      - op: filter
+        property: feature_id
+        operator: eq
+        value: $feature
+      - op: filter
+        property: counts_as_equipped
+        operator: eq
+        value: true
+      - op: back_to
+        object_type: ModelVersion
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  rule_refs:
+  - R_RATIO_SCOPE
+  - R_NO_SILENT_ZERO
+  - R_TRAVERSE_DEDUP
+  - R_NON_ADDITIVE_NO_ROLLUP
+  parameters:
+  - {name: feature, source: relation_targets, object_type: Feature, cardinality: one, when_absent: each_group}
+  signoff_ref: D5_equipped_definition
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - year_month
+  definition_cn: 搭载目标功能的车型销量 ÷ 范围内全部车型销量；同名的功能 ID 视为同一功能，同一车型无论有多少条装配记录，销量只计一次
+  disambiguate_against:
+  - feature_model_coverage_rate
+  default_assumption: 「搭载」看统计期末及之前最新一期 Tracker 的状态（D12，开关 P_FITMENT_AS_OF）；标配和选配都计入分子，一款车型的销量只计一次，不估算实际选装车辆数
+- id: feature_model_coverage_rate
+  name: 功能车型覆盖率
+  aliases:
+  - 覆盖率
+  - 车型覆盖率
+  - 有多少款车搭载
+  - 车型渗透率
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  - feature_id
+  operator: ratio
+  time_grain: none
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops:
+      - op: traverse
+        link: equippedWith
+      - op: filter
+        property: feature_id
+        operator: eq
+        value: $feature
+      - op: filter
+        property: counts_as_equipped
+        operator: eq
+        value: true
+      - op: back_to
+        object_type: ModelVersion
+    metric:
+      property: pk
+      agg: count_distinct
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      property: pk
+      agg: count_distinct
+  rule_refs:
+  - R_RATIO_SCOPE
+  - R_NO_SILENT_ZERO
+  - R_TRAVERSE_DEDUP
+  - R_NON_ADDITIVE_NO_ROLLUP
+  parameters:
+  - {name: feature, source: relation_targets, object_type: Feature, cardinality: one, when_absent: each_group}
+  signoff_ref: D5_equipped_definition
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  definition_cn: 搭载目标功能的去重车型数 ÷ 范围内全部车型数（不加权销量）
+  disambiguate_against:
+  - feature_installation_rate
+- id: feature_standard_rate
+  name: 功能标配率
+  aliases:
+  - 标配率
+  - 标准装备率
+  - 标配比例
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  - feature_id
+  operator: ratio
+  time_grain: month
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops:
+      - op: traverse
+        link: equippedWith
+      - op: filter
+        property: feature_id
+        operator: eq
+        value: $feature
+      - op: filter
+        property: fitment_type
+        operator: eq
+        value: STANDARD
+      - op: back_to
+        object_type: ModelVersion
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  rule_refs:
+  - R_RATIO_SCOPE
+  - R_NO_SILENT_ZERO
+  - R_TRAVERSE_DEDUP
+  - R_NON_ADDITIVE_NO_ROLLUP
+  parameters:
+  - {name: feature, source: relation_targets, object_type: Feature, cardinality: one, when_absent: each_group}
+  signoff_ref: D5_equipped_definition
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - year_month
+  definition_cn: 标配目标功能的去重车型销量 ÷ 范围内全部车型销量；可与选配率重叠，不相加解释为100%
+- id: feature_optional_rate
+  name: 功能选配率
+  aliases:
+  - 选配率
+  - 选装率
+  - 选装比例
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  - feature_id
+  operator: ratio
+  time_grain: month
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops:
+      - op: traverse
+        link: equippedWith
+      - op: filter
+        property: feature_id
+        operator: eq
+        value: $feature
+      - op: filter
+        property: fitment_type
+        operator: eq
+        value: OPTIONAL
+      - op: back_to
+        object_type: ModelVersion
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  rule_refs:
+  - R_RATIO_SCOPE
+  - R_NO_SILENT_ZERO
+  - R_TRAVERSE_DEDUP
+  - R_NON_ADDITIVE_NO_ROLLUP
+  parameters:
+  - {name: feature, source: relation_targets, object_type: Feature, cardinality: one, when_absent: each_group}
+  signoff_ref: D5_equipped_definition
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - year_month
+  definition_cn: 选配目标功能的去重车型销量 ÷ 范围内全部车型销量；可与标配率重叠，不相加解释为100%
+- id: feature_combination_installation_rate
+  name: 功能组合安装率
+  aliases:
+  - 组合安装率
+  - 同时搭载率
+  - 组合渗透率
+  - 两个功能都有的比例
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  - feature_ids
+  operator: ratio
+  time_grain: month
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops:
+      - op: for_each
+        parameter: features
+        combine: intersect
+        body:
+        - {op: traverse, link: equippedWith}
+        - {op: filter, property: feature_id, operator: eq, value: $features}
+        - {op: filter, property: counts_as_equipped, operator: eq, value: true}
+        - {op: back_to, object_type: ModelVersion}
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  rule_refs:
+  - R_RATIO_SCOPE
+  - R_NO_SILENT_ZERO
+  - R_TRAVERSE_DEDUP
+  - R_NON_ADDITIVE_NO_ROLLUP
+  parameters:
+  - {name: features, source: relation_targets, object_type: Feature, cardinality: many}
+  signoff_ref: D5_equipped_definition
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  definition_cn: 同时搭载全部目标功能的车型销量 ÷ 范围内全部车型销量
+- id: new_feature_installation_rate
+  name: 新增功能安装率
+  aliases:
+  - 新增功能装车率
+  - 新功能渗透率
+  - 新增功能供给率
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  - feature_id
+  operator: ratio
+  time_grain: month
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops:
+      - op: traverse
+        link: equippedWith
+      - op: filter
+        property: feature_id
+        operator: eq
+        value: $feature
+      - op: filter
+        property: is_new_added
+        operator: eq
+        value: true
+      - op: back_to
+        object_type: ModelVersion
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  rule_refs:
+  - R_RATIO_SCOPE
+  - R_NO_SILENT_ZERO
+  - R_TRAVERSE_DEDUP
+  - R_NON_ADDITIVE_NO_ROLLUP
+  parameters:
+  - {name: feature, source: relation_targets, object_type: Feature, cardinality: one, when_absent: each_group}
+  signoff_ref: D5_equipped_definition
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - year_month
+  definition_cn: 把目标功能标为「新增功能」（optimization='New added'）的车型销量 ÷ 范围内全部车型销量。 「新增功能」有现成标记，不需要跨期 diff
+- id: sales_share
+  name: 销量份额
+  aliases:
+  - 份额
+  - 市场份额
+  - 占比
+  - 销量占比
+  - 市占率
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - subject_hash
+  - time_window
+  operator: ratio
+  time_grain: month
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops:
+      - op: filter
+        property: pk
+        operator: in
+        values:
+        - $subject
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  rule_refs:
+  - R_RATIO_SCOPE
+  - R_NO_SILENT_ZERO
+  - R_NON_ADDITIVE_NO_ROLLUP
+  parameters:
+  # 主体只限定分子；分母是市场范围（筛选条件），没说市场就是全部监测车型（D7）。
+  # 没给主体而按维度分组时，每一组各自作主体：「各价格带的销量份额」
+  - {name: subject, source: subjects, object_type: ModelVersion, cardinality: many, when_absent: each_group}
+  signoff_ref: D7_market_denominator
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - year_month
+  definition_cn: 目标主体销量 ÷ 范围内全部车型销量。用户没说市场时分母取全部监测车型（D7），答案写明分母口径
+- id: sales_weighted_avg_transaction_price
+  name: 销量加权平均成交价
+  aliases:
+  - 成交价
+  - 平均成交价
+  - TP
+  - 加权成交价
+  - 实际成交价
+  - 终端价
+  unit: CNY
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  operator: ratio
+  time_grain: month
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      expr: tp * sales_volume
+      agg: sum
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  rule_refs:
+  # 通用查询编译器：加权均价是 CNY÷VEHICLE，单位由 R_WEIGHTED_PRICE 校验；
+  # R_RATIO_SCOPE 只适用于同单位相除的无量纲比例。
+  - R_WEIGHTED_PRICE
+  - R_NO_SILENT_ZERO
+  - R_NON_ADDITIVE_NO_ROLLUP
+  signoff_ref: D4_transaction_price
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - brand_cn
+  - year_month
+  definition_cn: Σ(成交价 × 销量) ÷ Σ(销量)。用 dm_car_model_line 的 tp 标量，不是 tp_bottom/tp_top 区间
+- id: sales_weighted_avg_msrp
+  name: 销量加权平均指导价
+  aliases:
+  - 指导价
+  - 平均指导价
+  - MSRP
+  - 加权指导价
+  - 官方价
+  - 厂商指导价
+  unit: CNY
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  operator: ratio
+  time_grain: month
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      expr: msrp * sales_volume
+      agg: sum
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      fact_link: hasSales
+      property: sales_volume
+      agg: sum
+  rule_refs:
+  # 通用查询编译器：加权均价是 CNY÷VEHICLE，单位由 R_WEIGHTED_PRICE 校验；
+  # R_RATIO_SCOPE 只适用于同单位相除的无量纲比例。
+  - R_WEIGHTED_PRICE
+  - R_NO_SILENT_ZERO
+  - R_NON_ADDITIVE_NO_ROLLUP
+  signoff_ref: D4_transaction_price
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - brand_cn
+  - year_month
+  definition_cn: Σ(指导价 × 销量) ÷ Σ(销量)
+- id: avg_features_per_model
+  name: 车均功能数
+  aliases:
+  - 平均功能数
+  - 每款车多少功能
+  - 配置丰富度
+  - 功能密度
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  operator: ratio
+  time_grain: none
+  measured_at: ModelVersion
+  numerator:
+    object_set:
+      base: $scope
+      ops:
+      - op: traverse
+        link: equippedWith
+      - op: filter
+        property: counts_as_equipped
+        operator: eq
+        value: true
+    metric:
+      property: feature_id
+      agg: count_distinct
+  denominator:
+    object_set:
+      base: $scope
+      ops: []
+    metric:
+      property: pk
+      agg: count_distinct
+  rule_refs:
+  - R_RATIO_SCOPE
+  - R_NO_SILENT_ZERO
+  - R_NON_ADDITIVE_NO_ROLLUP
+  signoff_ref: D5_equipped_definition
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  definition_cn: 范围内不重复功能数 ÷ 范围内车型数。分子刻意不 back_to： 这里要数的就是功能，不是车型，所以不涉及销量翻倍
+- id: transaction_price_distribution
+  name: 成交价分布
+  aliases:
+  - 成交价中位数
+  - 价格分位
+  - 价格分布
+  - 四分位
+  - 中位价
+  unit: CNY
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  operator: aggregate
+  spec:
+    fact_link: hasSales
+    property: tp
+    agg: percentile
+    percentile: 0.5
+  time_grain: month
+  measured_at: ModelVersion
+  rule_refs:
+  - R_NO_SILENT_ZERO
+  - R_NON_ADDITIVE_NO_ROLLUP
+  signoff_ref: D4_transaction_price
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  definition_cn: 范围内成交价的分位数。默认中位数；p25/p75 由 Repo3 的 S11 模板一次算出
+- id: sales_volume_yoy
+  name: 销量同比
+  aliases:
+  - 同比
+  - 同比增长
+  - 去年同期比
+  - YoY
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  operator: time_op
+  base_metric: sales_volume
+  time_op: yoy
+  time_grain: month
+  rule_refs:
+  - R_COMPARISON_WINDOW
+  - R_NO_SILENT_ZERO
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - brand_cn
+  definition_cn: 本期销量 ÷ 去年同期销量 − 1。两侧日历位置对应且年份差 1（I-03）
+- id: sales_volume_mom
+  name: 销量环比
+  aliases:
+  - 环比
+  - 环比增长
+  - 上月比
+  - MoM
+  unit: RATIO
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  operator: time_op
+  base_metric: sales_volume
+  time_op: mom
+  time_grain: month
+  rule_refs:
+  - R_COMPARISON_WINDOW
+  - R_NO_SILENT_ZERO
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - brand_cn
+  definition_cn: 本期销量 ÷ 上期销量 − 1。右侧末桶 +1 天 = 左侧首桶（I-04）
+- id: sales_volume_cumulative
+  name: 销量累计
+  aliases:
+  - 累计销量
+  - 累计
+  - 年初至今
+  - YTD
+  unit: VEHICLE
+  additive: true
+  operator: time_op
+  base_metric: sales_volume
+  time_op: cumulative
+  time_grain: month
+  rule_refs:
+  - R_NO_SILENT_ZERO
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - brand_cn
+  definition_cn: 窗口内按月累加。「今年」的上界取快照的 latest_complete_period，不是 12-31
+- id: sales_volume_moving_12
+  name: 销量移动 12 个月
+  aliases:
+  - 近12个月
+  - 滚动12个月
+  - 移动12月
+  - TTM
+  - 近一年
+  unit: VEHICLE
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  operator: time_op
+  base_metric: sales_volume
+  time_op: moving_12
+  time_grain: month
+  rule_refs:
+  - R_NO_SILENT_ZERO
+  - R_NON_ADDITIVE_NO_ROLLUP
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - brand_cn
+  definition_cn: 每个月点上向前 12 个月的销量和。需求 Table 6 明确要求，Repo3 4.4 表达不出来
+- id: sales_volume_since_launch
+  name: 上市后 N 个月销量
+  aliases:
+  - 上市后销量
+  - 上市N个月
+  - 上市初期销量
+  unit: VEHICLE
+  additive: true
+  operator: time_op
+  base_metric: sales_volume
+  time_op: since_launch
+  time_grain: month
+  rule_refs:
+  - R_NO_SILENT_ZERO
+  - R_LAUNCH_PROXY
+  signoff_ref: D1_model_identity
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - brand_cn
+  definition_cn: 从上市月起算的第 1..N 月销量。上市月取销量文件的 Model SOP date；该字段为空的车型用首个有销量的月份代替（D8）
+- id: msrp_transaction_price_gap
+  name: MSRP成交价价差
+  aliases:
+  - 价差
+  - 折价
+  - 折价幅度
+  - 优惠幅度
+  - 相差多少
+  - MSRP成交价价差
+  unit: CNY
+  operator: aggregate
+  additive: false
+  declared_grain:
+  - scope_hash
+  - time_window
+  time_grain: month
+  measured_at: ModelVersion
+  spec:
+    fact_link: hasSales
+    expr: msrp - tp
+    agg: avg
+  rule_refs:
+  - R_NO_SILENT_ZERO
+  signoff_ref: D4_transaction_price
+  supported_dimensions:
+  - segment
+  - bodytype
+  - powertrain
+  - brand_indicator
+  - price_band
+  - brand_cn
+  - oem_cn
+  - year_month
+  definition_cn: MSRP 与成交价之差（同一观测行内相减后按范围取均值）
+  default_assumption: 价差 = MSRP − 成交价；两者取同一观测行，避免跨行错配

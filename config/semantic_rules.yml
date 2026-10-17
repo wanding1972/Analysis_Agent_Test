@@ -1,0 +1,8 @@
+# No authoritative Metric/Scope/Grain compatibility tables were supplied.
+# Add human-approved CompatibilityRule entries to compatibility_rules.
+# Families: metric_scope_rules, metric_grain_rules, metric_dimension_rules,
+# metric_time_rules, join_cardinality_rules, aggregation_rules,
+# denominator_rules, relation_rules.
+schema_version: "1"
+compatibility_rules: []
+test_rules: []

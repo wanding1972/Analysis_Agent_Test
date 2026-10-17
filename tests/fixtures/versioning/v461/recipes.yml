@@ -1,0 +1,35 @@
+# Recipe registry（§3.7）。
+#
+# 多步问题走固定路径。LLM 只选 recipe_id，不设计步骤图（R3 闭集）。
+# emit_object_set / {ref: os_1} 是例四多步回填的契约面。
+#
+# V4.6：这里只登记**引擎真的按它执行**的配方。每道题走哪条路由 capabilities.yml 声明
+# （task_intent / fanout / analysis / recipe_ref），不再在这里给 40 题各放一条登记：
+#   · 原 rank_then_query（Q2 / Q24）：Top N 及份额现在是 Repo3 的一次分组查询，对比题走 compare
+#   · 原 feature_set_intersection（Q20 / Q21 / Q22）：组合安装率是一个指标；共现与常见组合走 analysis
+#   · 原 feature_set_difference（Q11 / Q34 / Q35）、rate_then_rank（Q18 / Q19 / Q35）：
+#     步骤里有引擎表达不了的形态，从未被执行过；这几题改由 Repo3 按功能分组的比率支撑
+# 一道题同时出现在两处、两处说法不一（Q35），是 V4.5 的 repo4 测试一直红着的原因之一。
+
+recipes:
+  - id: competitor_basket
+    name: 竞品篮子
+    description: >-
+      按级别 / 动力类型 / 价格带筛出竞品集合。两步：先查锚点车（如「大众ID.4 X」）拿到它的治理维度值，
+      再用这些值做等值筛选。价格相近用已物化的分类维度 price_band 表达，不做数值容差 ——
+      这条路径里没有任何业务算术，不碰「Repo4 不算业务数字」这条红线。
+    question_refs: [32]
+    params: [$scope, $anchor, $same_dims]
+    steps:
+      - id: s1
+        type: query
+        object_set: $anchor
+        emit_object_set: os_anchor
+      - id: s2
+        type: object_set
+        expr: $scope.same_values(os_anchor, [segment, powertrain, price_band])
+        depends_on: [s1]
+    preconditions:
+      - check: $anchor is not null
+        else: ASK_USER
+        ask: 以哪款车为基准找竞品？

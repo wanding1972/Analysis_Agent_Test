@@ -1,0 +1,58 @@
+links:
+  - id: hasVersion
+    name: 包含车型版本
+    aliases: [包含版本, 旗下车型, 车型版本]
+    from: Model
+    to: ModelVersion
+    cardinality: one_to_many
+    backing_dataset: obj_model_version
+    fk: model_id
+    requires_backto_for_fact_aggregation: false
+
+  - id: equippedWith
+    name: 搭载
+    description: 各期 Tracker 的装配记录。统计某个时间段时取哪一期由 as_of 决定（D12）；标配与选配可以同时成立。
+    # D12：每个车型取统计期末及之前最新一期 Tracker 的状态；开关在 policies.yml 的 P_FITMENT_AS_OF
+    as_of: {attribute: lf_tracker_update_date, policy_ref: P_FITMENT_AS_OF}
+    aliases: [搭载了, 配置了, 配备了, 装有, 有哪些功能, 带不带]
+    from: ModelVersion
+    to: Feature
+    cardinality: many_to_many
+    backing_dataset: link_fitment
+    reversible: true
+    requires_backto_for_fact_aggregation: true
+    scope_predicates:
+      counted: [{attribute: lf_counts_as_equipped, operator: eq, value: true}]
+      standard: [{attribute: lf_fitment_type, operator: eq, value: STANDARD}]
+      optional: [{attribute: lf_fitment_type, operator: eq, value: OPTIONAL}]
+
+  - id: hasSales
+    name: 销量记录
+    aliases: [销量, 卖了多少]
+    from: ModelVersion
+    to: SalesObservation
+    cardinality: one_to_many
+    backing_dataset: fact_sales
+    fk: model_version_id
+    requires_backto_for_fact_aggregation: false
+
+  - id: hasSpec
+    name: 车型参数
+    aliases: [参数是, 规格是]
+    from: ModelVersion
+    to: ModelSpec
+    cardinality: one_to_many
+    backing_dataset: fact_model_spec
+    fk: model_version_id
+    requires_backto_for_fact_aggregation: false
+
+  - id: hasSoftwareRelease
+    name: 软件发布记录
+    description: 同车型、功能、软件发布日期和版本可对应多条不同来源描述；关系按来源记录区分，不代表去重后的发布次数。
+    aliases: [软件版本, OTA记录, 软件发布日期]
+    from: ModelVersion
+    to: SoftwareRelease
+    cardinality: one_to_many
+    backing_dataset: event_software_release
+    fk: model_version_id
+    requires_backto_for_fact_aggregation: false

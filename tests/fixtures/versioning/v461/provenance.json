@@ -1,0 +1,44 @@
+{
+  "archive_name": "super_ai_v4.6.1_src_cd05c99.zip",
+  "archive_sha256": "54c3e3d24d325a05b28ed01eeee49b765abfbbe005478fbe2cb5ceb951f7b7cc",
+  "user_version": "V4.6.1",
+  "requirement_alias": "V4.1",
+  "files": {
+    "capabilities.yml": {
+      "source": "repo1/domains/automotive/ontology/capabilities.yml",
+      "sha256": "198e16647ec21ccddb8e0fe2ef91c54f8642df34893989333efd26991910bf8e"
+    },
+    "metrics.yml": {
+      "source": "repo1/domains/automotive/ontology/metrics.yml",
+      "sha256": "94f9ec569f9ec44645d4a9fa92e08d1a2517109ff738ca29c7eb153ab8a5cc29"
+    },
+    "object_types.yml": {
+      "source": "repo1/domains/automotive/ontology/object_types.yml",
+      "sha256": "e14224ede6db25cce223c826922943765381e623c8dd7751325e918d37e513ed"
+    },
+    "dimensions.yml": {
+      "source": "repo1/domains/automotive/ontology/dimensions.yml",
+      "sha256": "24564945e9dab0bd043e2ba0dad837f1bfff18bb74fd29a1f0ab362a5138e60f"
+    },
+    "links.yml": {
+      "source": "repo1/domains/automotive/ontology/links.yml",
+      "sha256": "3d57a48a5448661e82f41f6c533a839ccb37210c7225ca897a05e3bf0c388728"
+    },
+    "recipes.yml": {
+      "source": "repo1/domains/automotive/ontology/recipes.yml",
+      "sha256": "76841a5ce462ab20b0c9debde9d668fb48b55f75feeb7cef0066458276e033c3"
+    },
+    "package.yml": {
+      "source": "repo1/domains/automotive/ontology/package.yml",
+      "sha256": "fead1e162ffbb8befb0207e2343d77286226cdb68cad4d7a534fc6aa90f97676"
+    },
+    "smoke.query-task.json": {
+      "source": "repo1/domains/automotive/ontology/smoke.query-task.json",
+      "sha256": "c9c117a9b026f135b61e18bc180026178ff720050379ad98bc0e459df00259b5"
+    },
+    "repo4_query_task.json": {
+      "source": "repo3/examples/repo4_query_task.json",
+      "sha256": "0fc726451c5ae8baba13091fc90c3e1dcafcf9410ae429fb4a9defcde847d513"
+    }
+  }
+}

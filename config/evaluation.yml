@@ -1,0 +1,43 @@
+# Proposed defaults only. No human approval is manufactured by this phase.
+schema_version: "1"
+approval: proposed
+approved_by: null
+precedence: [failed, blocked, passed, skipped]
+semantic:
+  behaviors: [ANSWER]
+  failure_code: SEMANTIC_ERROR
+  fields:
+    metric: json_equal
+    scope: json_equal
+    grain: json_equal
+    dimensions: unordered_equal
+    time: json_equal
+    filters: unordered_equal
+    relations: unordered_equal
+    set_operations: json_equal
+    operation: json_equal
+plan:
+  behaviors: [ANSWER]
+  failure_code: PLAN_ERROR
+  fields: {steps: json_equal, step_dependencies: unordered_equal}
+  validate_structure: true
+evidence:
+  behaviors: [ANSWER]
+  failure_code: EVIDENCE_ERROR
+  require_golden: false
+  golden_comparison: json_equal
+  rule_bindings: {}
+  check_reference_conditions: true
+  reference_condition_comparison: json_equal
+  condition_fields: [metric, scope, grain, dimensions, time, filters, relations, set_operations, operation]
+answer:
+  behaviors: [ANSWER, CLARIFY, REJECT]
+  failure_code: ANSWER_ERROR
+  condition_fields: [metric, scope, grain, dimensions, time, filters, relations, set_operations, operation]
+  required_claims_complete: true
+  checks:
+    - {kind: behavior, behaviors: [ANSWER, CLARIFY, REJECT], comparison: json_equal}
+    - {kind: claims_complete, behaviors: [ANSWER, CLARIFY, REJECT], comparison: json_equal}
+    - {kind: claim_values, behaviors: [ANSWER, CLARIFY, REJECT], comparison: json_equal}
+    - {kind: claim_conditions, behaviors: [ANSWER, CLARIFY, REJECT], comparison: json_equal}
+    - {kind: answer_conditions, behaviors: [ANSWER], comparison: json_equal}

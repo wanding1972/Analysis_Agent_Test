@@ -1,0 +1,45 @@
+# Proposed profile; real approved seeds, templates and compatibility rules are required.
+schema_version: "1"
+approval: proposed
+approved_by: null
+pairwise_strength: 2
+high_risk_strength: 3
+high_risk_capability_ids: []
+max_generated_cases: 500
+max_candidate_checks: 10000
+max_interaction_checks: 100000
+paraphrase_count: 2
+max_ai_candidates: 40
+ai_enabled: false
+designer_prompt: >-
+  Generate candidate paraphrases of the supplied seed questions. Preserve the intended
+  business meaning, identifiers, numbers, filters, negation and time. Return only
+  seed_case_id and question through the requested schema. Respect paraphrase_count
+  per seed and max_candidates overall. Do not supply expected semantics, approval,
+  Golden Truth, test verdicts or hidden reasoning. All questions remain candidates.
+allowed_case_types: [combination, property, metamorphic, negative, paraphrase, seed]
+invalid_combination_strategy: exclude
+invalid_combination_behavior: REJECT
+generation_filters:
+  required_families:
+    - metric_scope_rules
+    - metric_grain_rules
+    - metric_dimension_rules
+    - metric_time_rules
+    - join_cardinality_rules
+    - aggregation_rules
+    - denominator_rules
+    - relation_rules
+  allow_capability_only: false
+  capability_axes:
+    metric: metrics
+    subject: subjects
+    dimensions: dimensions
+    time_op: time_ops
+    filters: filters
+    relations: relations
+    set_ops: set_ops
+    operation: operations
+  closed_world_axes: []
+  structural_operations: [sequence]
+templates: []

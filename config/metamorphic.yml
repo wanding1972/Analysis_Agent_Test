@@ -1,0 +1,43 @@
+# Candidates only. Completeness preconditions must be supplied by the caller.
+schema_version: "1"
+compatibility_rules: []
+test_rules:
+  - rule_id: annual_equals_month_sum
+    description: "PRD candidate: complete monthly values sum to annual total"
+    approval: proposed
+    approved_by: null
+    category: metamorphic
+    preconditions: {months_complete: true}
+    assertion: {kind: sum_equals, parts: monthly_values, total: annual_value, absolute_tolerance: 0}
+  - rule_id: group_sum_equals_total
+    description: "PRD candidate: complete groups sum to total"
+    approval: proposed
+    approved_by: null
+    category: metamorphic
+    preconditions: {groups_complete: true}
+    assertion: {kind: sum_equals, parts: group_values, total: total_value, absolute_tolerance: 0}
+  - rule_id: top10_subset_top20
+    description: "PRD candidate: Top10 is contained in Top20"
+    approval: proposed
+    approved_by: null
+    category: metamorphic
+    preconditions: {same_ordering: true, same_source: true}
+    assertion: {kind: subset, subset: top10, superset: top20}
+  - rule_id: filtered_subset_original
+    description: "PRD candidate: filtered set is contained in original set"
+    approval: proposed
+    approved_by: null
+    category: metamorphic
+    preconditions: {same_source: true}
+    assertion: {kind: subset, subset: filtered_set, superset: original_set}
+  - rule_id: semantic_paraphrase_equivalent
+    description: "PRD candidate: paraphrases preserve selected Canonical semantics"
+    approval: proposed
+    approved_by: null
+    category: metamorphic
+    preconditions: {}
+    assertion:
+      kind: semantic_equal
+      left: baseline_semantic
+      right: paraphrase_semantic
+      fields: [metric, scope, grain, dimensions, time, filters, relations, set_operations, operation]

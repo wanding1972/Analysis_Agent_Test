@@ -1,0 +1,1588 @@
+capabilities:
+- question_ref: 1
+  text: 某车型/品牌/OEM/细分市场在指定时间的总销量和分月销量是多少？
+  text_source: verified
+  domain: D01
+  declared_status: AVAILABLE
+  shapes:
+  - S1
+  - S9
+  metric_refs:
+  - sales_volume
+  - sales_volume_cumulative
+  output_kind: series
+  requires_signoffs:
+  - D1_model_identity
+  - D2_sales_authority
+  - D9_time_window
+  - D10_brand_oem
+  note: P1 验收题。验证跨时间跨主体聚合 —— 4.4 问「2024年比亚迪销量」返 12 行月度值、无合计
+  intent: aggregate
+  subject_arity: 1
+  channel: C1
+  task_intent: query
+  task_output_kind: series
+  default_metrics:
+  - sales_volume
+  params:
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_any:
+  - 总销量
+  - 分月销量
+  - 销量是多少
+  - 卖了多少
+  - 销量多少
+  - 销量
+  - 卖了几台
+  - 销售量
+  route_not:
+  - 安装率
+  - 供给率
+  - 覆盖率
+  - 份额
+  - 预测
+  - 相关
+  - 异常
+  - 对比
+  - 差异
+  - 分位
+  - 价差
+  - 成交价
+  - 结构
+  - 同比
+  - 环比
+  - 累计
+  - 上市
+  route_priority: 0
+- question_ref: 2
+  text: 某市场销量Top N车型/品牌/OEM及份额是多少
+  text_source: verified
+  domain: D01
+  declared_status: AVAILABLE
+  shapes:
+  - S3
+  - S4
+  metric_refs:
+  - sales_volume
+  - sales_share
+  output_kind: object_list
+  requires_signoffs:
+  - D1_model_identity
+  - D2_sales_authority
+  - D3_attribute_authority
+  - D10_brand_oem
+  note: Top N：按对象分组的销量与份额，一次查询、按销量排序取前 N（支持升序）。问的是指定主体的份额（没有 N）时，每个主体各算一行；既没有 N 也没有主体才追问
+  intent: rank
+  subject_arity: 0
+  channel: C1
+  task_intent: rank
+  task_output_kind: group_rows
+  default_metrics:
+  - sales_volume
+  - sales_share
+  fanout: per_scope
+  params:
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  - name: $n
+    role: limit
+    required: false
+    on_missing: ASK_USER
+    ask: 要取前几名？
+  route_any:
+  - Top
+  - top
+  - TOP
+  - 前几名
+  - 排名
+  - 销量最高
+  - 销量最低
+  - 份额
+  - 市占率
+  - 市场占有率
+  - 占比
+  - re:前\s*\d+\s*(名|款|位)
+  route_priority: 1
+- question_ref: 3
+  text: 某车型上市以来累计销量及上市后月度走势如何？
+  text_source: verified
+  domain: D01
+  declared_status: PARTIAL
+  shapes:
+  - S9
+  metric_refs:
+  - sales_volume
+  - sales_volume_since_launch
+  output_kind: series
+  requires_signoffs:
+  - D1_model_identity
+  - D2_sales_authority
+  - D9_time_window
+  - D11_model_name_variant
+  - D8_launch_date_proxy
+  missing:
+  - launch_date
+  fallback: 「上市以来」按数据覆盖期内的全部月份统计；上市时间取销量文件的 Model SOP date（D8，口径待签认），上市早于数据起点的车型，更早的销量不在数据内，答案会披露。也可以改问：该车型指定时间段的分月销量。
+  fallback_refs:
+  - 25
+  - 1
+  intent: trend
+  subject_arity: 1
+  channel: C1
+  task_intent: query
+  task_output_kind: series
+  default_metrics:
+  - sales_volume
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  route_all:
+  - - 上市以来
+    - 上市至今
+    - 自上市
+  route_not:
+  - 预测
+  - 竞品
+  - 相比
+  route_priority: 2
+- question_ref: 4
+  text: 某市场不同动力、车身、级别、品牌属性的销量结构如何？
+  text_source: verified
+  domain: D01
+  declared_status: AVAILABLE
+  shapes:
+  - S2
+  metric_refs:
+  - sales_volume
+  output_kind: table
+  requires_signoffs:
+  - D3_attribute_authority
+  note: 分组值必须来自治理维度（I-15），不是自由文本
+  intent: aggregate
+  subject_arity: 0
+  channel: C1
+  task_intent: query
+  task_output_kind: group_rows
+  default_metrics:
+  - sales_volume
+  params:
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  - name: $group
+    role: group_by
+    required: true
+    on_missing: ASK_USER
+    ask: 要按什么维度分组？（动力类型 / 车身形态 / 级别 / 价格带 / 品牌）
+  route_any:
+  - 销量结构
+  - 结构如何
+  - 不同动力
+  - 不同车身
+  - 不同级别
+  - 按动力
+  - 按车身
+  - 按级别
+  - 品牌属性
+  route_not:
+  - 安装率
+  - 价格带
+  route_priority: 1
+- question_ref: 5
+  text: 某车型最新MSRP、成交价和历史成交价分别是多少？
+  text_source: verified
+  domain: D02
+  declared_status: AVAILABLE
+  shapes:
+  - S1
+  - S12
+  metric_refs:
+  - sales_weighted_avg_transaction_price
+  - sales_weighted_avg_msrp
+  output_kind: scalar
+  requires_signoffs:
+  - D2_sales_authority
+  - D4_transaction_price
+  - D11_model_name_variant
+  intent: lookup
+  subject_arity: 1
+  channel: C1
+  task_intent: query
+  task_output_kind: object_list
+  metric_mode: none
+  analysis: latest_price
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  note: D4：最新 = 各版本最近一个有数据月份的值，车型层给最低–最高范围；带时间范围时给按月序列
+  route_any:
+  - MSRP
+  - msrp
+  - 指导价
+  - 成交价
+  - 多少钱
+  - 价格是多少
+  - 价格
+  - 售价
+  - 官方价
+  route_not:
+  - 加权
+  - 价差
+  - 折价
+  - 分位
+  - 中位数
+  - 分布
+  route_priority: 1
+- question_ref: 6
+  text: 某市场销量加权平均成交价是多少？
+  text_source: verified
+  domain: D02
+  declared_status: AVAILABLE
+  shapes:
+  - S4
+  metric_refs:
+  - sales_weighted_avg_transaction_price
+  output_kind: scalar
+  requires_signoffs:
+  - D7_market_denominator
+  note: D7：没说市场时范围取全部监测车型，答案写明
+  intent: ratio
+  subject_arity: 0
+  channel: C1
+  task_intent: query
+  task_output_kind: scalar
+  default_metrics:
+  - sales_weighted_avg_transaction_price
+  params:
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 加权平均成交价
+    - 加权成交价
+    - 销量加权
+  route_priority: 2
+- question_ref: 7
+  text: 某车型MSRP与成交价的价差及变化趋势如何？
+  text_source: verified
+  domain: D02
+  declared_status: AVAILABLE
+  shapes:
+  - S4
+  - S9
+  metric_refs:
+  - msrp_transaction_price_gap
+  - sales_weighted_avg_msrp
+  - sales_weighted_avg_transaction_price
+  output_kind: series
+  requires_signoffs:
+  - D7_market_denominator
+  - D2_sales_authority
+  - D9_time_window
+  - D11_model_name_variant
+  note: 同比两侧日历位置必须对应且年份差 1（I-03）；4.2.2 这一项 100% 算错窗口
+  intent: trend
+  subject_arity: 1
+  channel: C1
+  task_intent: query
+  task_output_kind: series
+  default_metrics:
+  - msrp_transaction_price_gap
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 价差
+    - 折价
+    - 相差多少
+  route_priority: 2
+- question_ref: 8
+  text: 各价格带的车型数、销量和份额是多少？
+  text_source: verified
+  domain: D02
+  declared_status: AVAILABLE
+  shapes:
+  - S2
+  - S4
+  metric_refs:
+  - model_count
+  - sales_volume
+  - sales_share
+  output_kind: table
+  requires_signoffs:
+  - D3_attribute_authority
+  - D7_market_denominator
+  intent: aggregate
+  subject_arity: 0
+  channel: C1
+  task_intent: query
+  task_output_kind: group_rows
+  default_metrics:
+  - model_count
+  - sales_volume
+  - sales_share
+  params:
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 价格带
+  route_not:
+  - 安装率
+  - 分布
+  - 分位
+  - 竞品
+  - 篮子
+  - 相似
+  - 差异化
+  - 缺少
+  route_priority: 2
+- question_ref: 9
+  text: 某车型安装了哪些功能，哪些标配、哪些选配？
+  text_source: verified
+  domain: D03
+  declared_status: AVAILABLE
+  shapes:
+  - S6
+  link_refs:
+  - equippedWith
+  output_kind: object_list
+  requires_signoffs:
+  - D5_equipped_definition
+  - D6_feature_source_priority
+  - D11_model_name_variant
+  - D12_fitment_as_of
+  note: 正向遍历。输出是对象列表，Claim Gate 必须走 object_refs 碰撞而不是数字池
+  intent: enumerate
+  subject_arity: 1
+  channel: C1
+  task_intent: traverse
+  task_output_kind: object_list
+  metric_mode: none
+  analysis: fitment_split
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  route_any:
+  - 哪些功能
+  - 什么功能
+  - 哪些配置
+  - 区分标配和选配
+  - 功能清单
+  - 配置清单
+  - re:(搭载|安装|配备|配)了?(哪些|什么)
+  route_not:
+  - 差异化
+  - 缺少
+  - 通常还
+  - 分类下
+  - 这个分类
+  - SAE
+  - 共同出现
+  - 最常见
+  - 竞品
+  route_priority: 1
+- question_ref: 10
+  text: 哪些车型安装了指定功能？
+  text_source: verified
+  domain: D03
+  declared_status: AVAILABLE
+  shapes:
+  - S7
+  link_refs:
+  - equippedWith
+  output_kind: object_list
+  requires_signoffs:
+  - D5_equipped_definition
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  note: 反向遍历。Repo3 4.4 只支持 FORWARD，这题是 reversible=true 的直接消费者
+  intent: enumerate
+  subject_arity: 0
+  channel: C1
+  task_intent: traverse
+  task_output_kind: object_list
+  metric_mode: none
+  params:
+  - name: $feature
+    role: filter_object
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一个功能。
+  route_priority: 1
+  route_all:
+  - - re:(哪些|哪款|哪几款|什么).{0,14}(车型|车款|车)
+  - - 搭载
+    - 安装
+    - 配了
+    - 配备
+    - 标配
+    - 选配
+    - 装了
+    - 提供
+  route_not:
+  - 哪些功能
+  - 同时搭载
+  - 同时具备
+  - 通常还
+  - 相似
+  - 竞品
+  - 比例
+- question_ref: 11
+  text: 指定SAE分类下有哪些功能和车型？
+  text_source: verified
+  domain: D03
+  declared_status: AVAILABLE
+  shapes:
+  - S6
+  - S7
+  link_refs:
+  - equippedWith
+  output_kind: object_list
+  requires_signoffs:
+  - D5_equipped_definition
+  - D6_feature_source_priority
+  - D12_fitment_as_of
+  intent: enumerate
+  subject_arity: 0
+  channel: C2
+  task_intent: traverse
+  task_output_kind: object_list
+  metric_mode: none
+  analysis: category_listing
+  params:
+  - name: $category
+    role: filter_object
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一个 SAE 功能分类。
+  route_all:
+  - - SAE
+    - 分类下
+    - 这个分类
+    - 分类里
+    - 类功能
+    - 智驾分类
+    - 智能座舱分类
+  route_priority: 2
+- question_ref: 12
+  text: 某车型的续航、车长、轴距和充电时间是多少？
+  text_source: verified
+  domain: D02
+  declared_status: AVAILABLE
+  shapes:
+  - S5
+  link_refs:
+  - hasSpec
+  output_kind: table
+  requires_signoffs:
+  - X2_model_spec_branch
+  - D11_model_name_variant
+  fallback: 车型参数按 X2 口径取数：续航 = CLTC纯电续航里程(km)，充电时间 = 电池快充时间(h)，车长 = 长度(mm)，轴距 = 轴距(mm)，答案复述所取的参数名（口径待签认）。
+  fallback_refs:
+  - 5
+  - 1
+  - 9
+  note: 设计文档 §2.3 判为 DATA_UNAVAILABLE（阻塞）。本轮实测把它改判为 CALIBRATION_PENDING —— 参数以 EAV 行存在，不是不存在。 契约 attr_model_spec 的 QC-19 是探针：跑一次就能确定该升为
+    AVAILABLE 还是降为 DATA_UNAVAILABLE。
+  intent: lookup
+  subject_arity: 1
+  channel: C1
+  task_intent: traverse
+  task_output_kind: object_list
+  metric_mode: none
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  route_any:
+  - 续航
+  - 轴距
+  - 车长
+  - 充电时间
+  - 快充时间
+  - 车身长度
+  - 车宽
+  - 电池能量
+  route_not:
+  - 以上
+  - 以下
+  - 超过
+  - 不低于
+  - 不高于
+  - 分布
+  - 相关
+  - 分位
+  - 筛选
+  - 篮子
+  - 关系
+  - 关联
+  route_priority: 1
+- question_ref: 13
+  text: 满足指定参数区间的车型有哪些？
+  text_source: verified
+  domain: D02
+  declared_status: AVAILABLE
+  shapes:
+  - S5
+  link_refs:
+  - hasSpec
+  output_kind: object_list
+  requires_signoffs:
+  - X2_model_spec_branch
+  fallback: 按参数取值筛选车型（X2 口径，待签认）：参数按名称匹配，数值取解析后的参数数值。也可以按价格带、级别、车身形态、动力类型筛选车型。
+  fallback_refs:
+  - 5
+  - 4
+  intent: enumerate
+  subject_arity: 0
+  channel: C1
+  task_intent: query
+  task_output_kind: object_list
+  metric_mode: none
+  params:
+  - name: $range
+    role: value_range
+    required: true
+    on_missing: ASK_USER
+    ask: 请给出参数区间，比如「续航 500 公里以上」。
+  route_priority: 1
+  route_all:
+  - - re:\d+(\.\d+)?\s*(公里|km|千米|毫米|mm|米|小时|h|kWh|度)
+  - - 以上
+    - 以下
+    - 超过
+    - 不低于
+    - 不高于
+    - 至少
+    - 最多
+    - 大于
+    - 小于
+    - 区间
+  route_any:
+  - 参数区间
+  - 满足指定参数
+  - 区间筛选
+- question_ref: 14
+  text: 某参数在不同品牌、Segment和价格带的分布如何？
+  text_source: verified
+  domain: D02
+  declared_status: AVAILABLE
+  shapes:
+  - S11
+  link_refs:
+  - hasSpec
+  output_kind: table
+  requires_signoffs:
+  - X2_model_spec_branch
+  - D4_transaction_price
+  fallback: 成交价的分位分布可以按品牌、级别、价格带分别给出。车型参数（续航等）的分布需要参数分位指标，本体尚未登记，暂不提供；可以改问参数区间筛选。
+  fallback_refs:
+  - 5
+  - 24
+  intent: distribution
+  subject_arity: 0
+  channel: C1
+  task_intent: distribution
+  task_output_kind: distribution
+  metric_refs:
+  - transaction_price_distribution
+  default_metrics:
+  - transaction_price_distribution
+  fanout: per_scope
+  params:
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_any:
+  - 参数分布
+  - 如何分布
+  - 分布如何
+  - 的分布
+  - 参数在不同
+  route_not:
+  - 分位
+  - 竞品
+  - 销量结构
+  route_priority: 1
+- question_ref: 15
+  text: 某功能在指定市场的车型覆盖率是多少？
+  text_source: reconstructed
+  domain: D04
+  declared_status: AVAILABLE
+  shapes:
+  - S4
+  metric_refs:
+  - feature_model_coverage_rate
+  link_refs:
+  - equippedWith
+  output_kind: scalar
+  requires_signoffs:
+  - D5_equipped_definition
+  - D7_market_denominator
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  intent: ratio
+  subject_arity: 0
+  channel: C1
+  task_intent: query
+  task_output_kind: scalar
+  params:
+  - name: $feature
+    role: filter_object
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一个功能。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 覆盖率
+    - 多少比例的车型
+    - 有多少车型提供
+  route_priority: 2
+- question_ref: 16
+  text: 某功能在指定市场的销量加权供给率是多少？
+  text_source: verified
+  domain: D04
+  declared_status: AVAILABLE
+  shapes:
+  - S4
+  metric_refs:
+  - feature_installation_rate
+  link_refs:
+  - equippedWith
+  output_kind: scalar
+  requires_signoffs:
+  - D5_equipped_definition
+  - D7_market_denominator
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  note: 全链路验收题。「今年 A-SUV BEV 市场副驾屏安装率」。 验收标准：把筛选换成「20–30 万 BEV」，分母自动变，不新建表不改一行 SQL
+  intent: ratio
+  subject_arity: 0
+  channel: C1
+  task_intent: query
+  task_output_kind: scalar
+  params:
+  - name: $feature
+    role: filter_object
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一个功能。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 安装率
+    - 供给率
+    - 渗透率
+    - 搭载率
+  route_not:
+  - 标配安装率
+  - 选配安装率
+  - 标配率
+  - 选配率
+  - 覆盖率
+  - 按月
+  - 分月
+  - 随时间
+  - 差异
+  - 组合
+  - 同时搭载
+  - 缺少
+  - 预测
+  route_priority: 2
+- question_ref: 17
+  text: 某功能的标配率、选配率分别是多少？
+  text_source: verified
+  domain: D04
+  declared_status: AVAILABLE
+  shapes:
+  - S4
+  metric_refs:
+  - feature_standard_rate
+  - feature_optional_rate
+  link_refs:
+  - equippedWith
+  output_kind: table
+  requires_signoffs:
+  - D5_equipped_definition
+  - D7_market_denominator
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  intent: ratio
+  subject_arity: 0
+  channel: C1
+  task_intent: query
+  task_output_kind: scalar
+  default_metrics:
+  - feature_standard_rate
+  - feature_optional_rate
+  params:
+  - name: $feature
+    role: filter_object
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一个功能。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 标配安装率
+    - 选配安装率
+    - 标配率
+    - 选配率
+  route_priority: 2
+- question_ref: 18
+  text: 某功能在品牌、价格带或Segment之间有何差异？
+  text_source: verified
+  domain: D04
+  declared_status: AVAILABLE
+  shapes:
+  - S2
+  - S4
+  metric_refs:
+  - feature_installation_rate
+  link_refs:
+  - equippedWith
+  output_kind: table
+  requires_signoffs:
+  - D5_equipped_definition
+  - D3_attribute_authority
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  note: 非可加指标分组必须重算，不得对各组的率求和（I-08）
+  intent: ratio
+  subject_arity: N
+  channel: C1
+  task_intent: query
+  task_output_kind: group_rows
+  fanout: per_scope
+  params:
+  - name: $feature
+    role: filter_object
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一个功能。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  - name: $group
+    role: group_by
+    required: true
+    on_missing: ASK_USER
+    ask: 要按什么维度分组？（动力类型 / 车身形态 / 级别 / 价格带 / 品牌）
+  route_all:
+  - - 安装率
+    - 供给率
+    - 渗透率
+    - 搭载率
+  - - 差异
+    - 分别是多少
+    - 之间
+    - 各品牌
+    - 不同品牌
+    - 不同市场
+    - 在大众
+    - 按品牌
+    - 各级别
+    - 不同级别
+    - 各细分市场
+    - 各价格带
+    - 不同价格带
+  route_priority: 2
+  route_not:
+  - 标配安装率
+  - 选配安装率
+  - 标配率
+  - 选配率
+  - 按月
+  - 分月
+  - 逐月
+  - 随时间
+  - 同时搭载
+  - 缺少
+  - 预测
+- question_ref: 19
+  text: 某功能的供给率随时间如何变化？
+  text_source: verified
+  domain: D04
+  declared_status: AVAILABLE
+  shapes:
+  - S4
+  - S9
+  metric_refs:
+  - feature_installation_rate
+  output_kind: series
+  requires_signoffs:
+  - D5_equipped_definition
+  - D7_market_denominator
+  - D9_time_window
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  intent: trend
+  subject_arity: 0
+  channel: C1
+  task_intent: query
+  task_output_kind: series
+  fanout: per_month
+  params:
+  - name: $feature
+    role: filter_object
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一个功能。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 安装率
+    - 供给率
+  - - 按月
+    - 分月
+    - 随时间
+    - 逐月
+    - 走势
+  route_priority: 2
+- question_ref: 20
+  text: 多个功能同时搭载的车型及销量份额是多少？
+  text_source: verified
+  domain: D05
+  declared_status: AVAILABLE
+  shapes:
+  - S4
+  - S8
+  metric_refs:
+  - feature_combination_installation_rate
+  link_refs:
+  - equippedWith
+  output_kind: scalar
+  requires_signoffs:
+  - D5_equipped_definition
+  - D7_market_denominator
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  intent: set_algebra
+  subject_arity: 0
+  channel: C1
+  task_intent: set_algebra
+  task_output_kind: scalar
+  params:
+  - name: $features
+    role: filter_object_multi
+    required: true
+    on_missing: ASK_USER
+    ask: 请指出至少两个功能。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 同时搭载
+    - 同时具备
+    - 同时配备
+    - 都搭载
+    - 同时提供
+  route_priority: 2
+- question_ref: 21
+  text: 某市场最常见的功能组合是什么？
+  text_source: verified
+  domain: D05
+  declared_status: AVAILABLE
+  shapes:
+  - S8
+  link_refs:
+  - equippedWith
+  output_kind: object_list
+  requires_signoffs:
+  - D5_equipped_definition
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  note: 'Question Scope D05 在范围内（评审 #18）。组合按「覆盖车型数最多」排序：先由 Repo3 给出范围内覆盖率最高的若干功能，再逐个组合取 Repo3 的交集车型数；Agent 只排版，不自己数'
+  intent: set_algebra
+  subject_arity: 0
+  channel: C2
+  task_intent: query
+  task_output_kind: group_rows
+  metric_refs:
+  - feature_model_coverage_rate
+  analysis: feature_bundles
+  params:
+  - name: $size
+    role: cardinality
+    required: true
+    allowed:
+    - 2
+    - 3
+    on_missing: ASK_USER
+    ask: 要看双功能组合还是三功能组合？
+  route_all:
+  - - 最常见
+    - 常见的双功能
+    - 常见的三功能
+    - 功能组合是什么
+    - 常见的功能组合
+  route_priority: 2
+- question_ref: 22
+  text: 某功能通常与哪些功能共同出现？
+  text_source: verified
+  domain: D05
+  declared_status: AVAILABLE
+  shapes:
+  - S8
+  link_refs:
+  - equippedWith
+  output_kind: object_list
+  requires_signoffs:
+  - D5_equipped_definition
+  - D12_fitment_as_of
+  - X3_feature_identity_stability
+  note: 'Question Scope D05 在范围内（评审 #18）。先取搭载该功能的车型集合，再由 Repo3 在这批车型里按功能分组算覆盖率（按关系对端分组的比率）'
+  intent: set_algebra
+  subject_arity: 0
+  channel: C2
+  task_intent: query
+  task_output_kind: group_rows
+  metric_refs:
+  - feature_model_coverage_rate
+  analysis: cooccurrence
+  params:
+  - name: $feature
+    role: filter_object
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一个功能。
+  route_all:
+  - - 通常还搭载
+    - 共同出现
+    - 共现
+    - 还搭载哪些
+  route_priority: 2
+- question_ref: 23
+  text: 两款车型在价格、参数、配置和销量方面有何差异？
+  text_source: verified
+  domain: D06
+  declared_status: AVAILABLE
+  shapes:
+  - S6
+  - S10
+  metric_refs:
+  - sales_volume
+  - sales_weighted_avg_transaction_price
+  - sales_weighted_avg_msrp
+  - avg_features_per_model
+  link_refs:
+  - equippedWith
+  output_kind: table
+  requires_signoffs:
+  - D5_equipped_definition
+  - D6_feature_source_priority
+  - D11_model_name_variant
+  - D12_fitment_as_of
+  note: 多方对比必须显式 comparison_pairs 配对，坐标对齐；车均功能数给出配置丰富度的总量对比
+  intent: compare
+  subject_arity: N
+  channel: C1
+  task_intent: compare
+  task_output_kind: scalar
+  fanout: per_scope
+  params:
+  - name: $subjects
+    role: operand_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明要对比的两个对象（两款车型、两个品牌或两个市场）。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  - name: $aspect
+    role: aspect
+    required: true
+    on_missing: ASK_USER
+    ask: 要对比哪个方面？可以是销量、成交价、MSRP，也可以是具体的参数（如续航、轴距）或配置。
+  route_all:
+  - - 差异
+    - 对比
+    - 相比
+    - 比怎么样
+  route_not:
+  - 品牌和
+  - 品牌与
+  - 市场在
+  - 上市后
+  - 竞品
+  - 相关
+  - 差异化
+  - 安装率
+  - 供给率
+  - 未配置
+  - 结构
+  - 分布
+  - 分位
+  - 价格带
+  route_priority: 2
+- question_ref: 24
+  text: 两个品牌或市场在销量、价格和配置方面有何差异？
+  text_source: verified
+  domain: D06
+  declared_status: AVAILABLE
+  shapes:
+  - S10
+  - S11
+  metric_refs:
+  - sales_volume
+  - sales_weighted_avg_transaction_price
+  - sales_weighted_avg_msrp
+  - transaction_price_distribution
+  output_kind: table
+  requires_signoffs:
+  - D2_sales_authority
+  - D4_transaction_price
+  - D10_brand_oem
+  intent: compare
+  subject_arity: N
+  channel: C1
+  task_intent: compare
+  task_output_kind: scalar
+  fanout: per_scope
+  params:
+  - name: $subjects
+    role: operand_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明要对比的两个对象（两款车型、两个品牌或两个市场）。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  - name: $aspect
+    role: aspect
+    required: true
+    on_missing: ASK_USER
+    ask: 要对比哪个方面？可以是销量、成交价或 MSRP。
+  route_all:
+  - - 差异
+    - 对比
+    - 相比
+    - 比怎么样
+  - - 品牌和
+    - 品牌与
+    - 两个品牌
+    - 两个市场
+    - 市场在
+    - 别的品牌
+    - 市场和
+    - 市场与
+    - re:(牌|品牌).{0,8}(和|与|跟|对比)
+  route_not:
+  - 上市后
+  - 差异化
+  - 安装率
+  - 供给率
+  - 未配置
+  - 结构
+  - 分位
+  route_priority: 2
+- question_ref: 25
+  text: 某车型或市场的同比、环比及移动12个月趋势如何？
+  text_source: verified
+  domain: D01
+  declared_status: AVAILABLE
+  shapes:
+  - S9
+  metric_refs:
+  - sales_volume
+  - sales_volume_cumulative
+  - sales_volume_moving_12
+  output_kind: series
+  requires_signoffs:
+  - D2_sales_authority
+  - D9_time_window
+  note: 「今年」的上界必须取快照的 latest_complete_period，不是 12-31（坑 6）。 移动 12 个月是需求 Table 6 明确要求的，Repo3 4.4 表达不出来
+  intent: trend
+  subject_arity: 1
+  channel: C1
+  task_intent: query
+  task_output_kind: series
+  default_metrics:
+  - sales_volume
+  params:
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 同比
+    - 环比
+    - 移动12个月
+    - 移动 12 个月
+    - 滚动12个月
+    - 滚动 12 个月
+  route_not:
+  - 预测
+  - 安装率
+  - 异常
+  route_priority: 2
+- question_ref: 26
+  text: 某车型上市后前3/6/12个月表现与竞品相比如何？
+  text_source: verified
+  domain: D06
+  declared_status: PARTIAL
+  shapes:
+  - S9
+  - S10
+  metric_refs:
+  - sales_volume
+  - sales_volume_yoy
+  - sales_volume_since_launch
+  output_kind: table
+  requires_signoffs:
+  - D1_model_identity
+  - D2_sales_authority
+  - D9_time_window
+  - D11_model_name_variant
+  - D8_launch_date_proxy
+  missing:
+  - launch_date
+  fallback: 「上市后前 N 个月」的起点取销量文件的 Model SOP date，缺失的车型用首个有销量的月份代替（D8，口径待签认）。上市早于数据起点的车型，其上市初期不在数据内。本系统只输出事实，不做因果证明。也可以改问：这几款车在指定时间段内的销量对比。
+  fallback_refs:
+  - 24
+  - 25
+  intent: compare
+  subject_arity: N
+  channel: C1
+  task_intent: query
+  task_output_kind: series
+  default_metrics:
+  - sales_volume
+  fanout: per_scope
+  analysis: since_launch
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  route_all:
+  - - 上市后
+  route_priority: 2
+- question_ref: 27
+  text: 新上市车型对同级存量车型产生了哪些竞争迹象？
+  text_source: verified
+  domain: D07
+  declared_status: OUT_OF_SCOPE
+  fallback: 新上市车型的竞争迹象分析（新车上市前后竞品销量与份额变化）属于 D07 诊断与发现。Question Scope V1.1 注明 D07 不在 Super AI V1.0 的范围内，本期不做。当前可以查询：指定车型上市后的销量走势、同级车型的销量和份额。
+  fallback_refs:
+  - 3
+  - 26
+  - 1
+  - 2
+  intent: diagnose
+  channel: C3
+  route_all:
+  - - 竞争迹象
+    - 新车上市
+    - 新上市车型对
+    - 对老车型
+    - 对同级
+  route_priority: 2
+- question_ref: 28
+  text: 成交价与销量存在什么相关关系？
+  text_source: verified
+  domain: D07
+  declared_status: OUT_OF_SCOPE
+  fallback: 成交价与销量的相关分析（相关、分组对比和简单回归）属于 D07 诊断与发现。Question Scope V1.1 注明 D07 不在 Super AI V1.0 的范围内，系统不输出相关系数。当前可以分别查询：销量、销量加权平均成交价、各价格带的销量。
+  fallback_refs:
+  - 1
+  - 6
+  - 8
+  intent: diagnose
+  channel: C3
+  route_all:
+  - - 成交价与销量
+    - 价格和销量
+    - 价格与销量
+  route_priority: 2
+- question_ref: 29
+  text: 续航、充电时间、尺寸与销量存在什么相关关系？
+  text_source: verified
+  domain: D07
+  declared_status: OUT_OF_SCOPE
+  fallback: 续航、充电时间、尺寸与销量的相关分析（相关、分组对比和简单回归）属于 D07 诊断与发现。Question Scope V1.1 注明 D07 不在 Super AI V1.0 的范围内，本期不做。当前可以查询：车型参数、按参数区间筛选车型、销量。
+  fallback_refs:
+  - 12
+  - 13
+  - 1
+  intent: diagnose
+  channel: C3
+  route_all:
+  - - 相关关系
+    - 有关系吗
+    - 与销量的关系
+    - 关联更强
+  - - 续航
+    - 充电时间
+    - 尺寸
+    - 参数
+    - 轴距
+  route_not:
+  - 成交价与销量
+  - 价格和销量
+  - 价格与销量
+  - 哪些因素
+  route_priority: 2
+- question_ref: 30
+  text: 配置某功能和未配置该功能的车型销量有何差异？
+  text_source: verified
+  domain: D07
+  declared_status: OUT_OF_SCOPE
+  fallback: 配置与未配置某功能的车型销量对比（分组对比）属于 D07 诊断与发现。Question Scope V1.1 注明 D07 不在 Super AI V1.0 的范围内，本期不做。当前可以查询：该功能的安装率和车型覆盖率、搭载该功能的车型清单。
+  fallback_refs:
+  - 16
+  - 15
+  - 10
+  intent: diagnose
+  channel: C3
+  route_all:
+  - - 配置某功能和未配置
+    - 和未配置
+    - 未配置该功能
+    - 有没有这个功能
+    - 有无该功能
+  route_priority: 2
+- question_ref: 31
+  text: 控制价格、Segment和上市时间后，哪些因素与销量关联更强？
+  text_source: verified
+  domain: D07
+  declared_status: OUT_OF_SCOPE
+  fallback: 控制价格、Segment 和上市时间后的关联分析需要多元回归，属于 D07 诊断与发现。Question Scope V1.1 注明 D07 不在 Super AI V1.0 的范围内，本期不做。当前可以查询：销量结构、各价格带的车型数和销量。
+  fallback_refs:
+  - 4
+  - 8
+  intent: diagnose
+  channel: C3
+  route_all:
+  - - 控制价格
+    - 关联更强
+    - 影响销量更大
+    - 哪些因素
+  route_not:
+  - 异常
+  - 共同特征
+  - 配置空白
+  route_priority: 2
+- question_ref: 32
+  text: 如何根据级别、动力、价格、尺寸、参数和配置确定竞品篮子？
+  text_source: verified
+  domain: D06
+  declared_status: PARTIAL
+  shapes:
+  - S12
+  recipe_ref: competitor_basket
+  output_kind: object_list
+  requires_signoffs:
+  - D3_attribute_authority
+  - D4_transaction_price
+  - D11_model_name_variant
+  missing:
+  - launch_date
+  fallback: 竞品篮子按「同级别 + 同动力类型 + 同价格带」筛选，可以给出；价格相近用价格带表达，不做数值容差。「同期上市」这一条暂不参与筛选，答案会披露这条限制。
+  fallback_refs:
+  - 4
+  - 5
+  intent: similarity
+  subject_arity: 1
+  channel: C2
+  task_intent: enumerate
+  task_output_kind: object_list
+  metric_mode: none
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  route_all:
+  - - 竞品篮子
+    - 筛选竞品
+    - 确定竞品
+  route_priority: 2
+- question_ref: 33
+  text: 哪些车型与目标车型最相似？
+  text_source: verified
+  domain: D06
+  declared_status: CALIBRATION_PENDING
+  shapes:
+  - S12
+  recipe_ref: competitor_basket
+  output_kind: object_list
+  requires_signoffs:
+  - D3_attribute_authority
+  - D4_transaction_price
+  - D11_model_name_variant
+  fallback: 相似度的属性权重尚未签认（价格占多少、功能重合度占多少、级别是否硬约束）。 未签认的权重会让「最相似」这个结论不可复验。 当前可以给出规则筛选的竞品篮子，那个口径是显式的。
+  fallback_refs:
+  - 32
+  - 23
+  note: Repo3 只返回候选对象的属性向量，加权距离由 Repo4 的 AnalysisFunction 算
+  intent: similarity
+  subject_arity: 1
+  channel: C2
+  route_all:
+  - - 最相似
+    - 相似度
+    - 最像
+    - 相似的
+  route_priority: 2
+- question_ref: 34
+  text: 目标车型相对竞品缺少哪些市场主流功能？
+  text_source: verified
+  domain: D06
+  declared_status: AVAILABLE
+  shapes:
+  - S4
+  - S8
+  metric_refs:
+  - feature_installation_rate
+  link_refs:
+  - equippedWith
+  output_kind: object_list
+  requires_signoffs:
+  - D5_equipped_definition
+  - D7_market_denominator
+  - D11_model_name_variant
+  - D12_fitment_as_of
+  note: 主流功能 = 竞品市场（用户所说的市场范围）里安装率不低于用户给的阈值的功能；阈值必须由用户给出，不取默认值。各功能的安装率由 Repo3 按功能分组一次算出
+  intent: set_algebra
+  subject_arity: 1
+  channel: C2
+  task_intent: query
+  task_output_kind: group_rows
+  analysis: feature_gap
+  default_metrics:
+  - feature_installation_rate
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 缺少哪些
+    - 相对竞品缺少
+    - 缺少的主流功能
+    - 缺少的功能
+    - 缺哪些
+  route_priority: 2
+- question_ref: 35
+  text: 目标车型有哪些差异化功能？
+  text_source: verified
+  domain: D06
+  declared_status: AVAILABLE
+  shapes:
+  - S8
+  metric_refs:
+  - feature_installation_rate
+  - new_feature_installation_rate
+  link_refs:
+  - equippedWith
+  output_kind: object_list
+  requires_signoffs:
+  - D5_equipped_definition
+  - D6_feature_source_priority
+  - D11_model_name_variant
+  - D12_fitment_as_of
+  note: 差异化功能 = 目标车型搭载、而同级别同动力市场里安装率最低的功能。各功能的安装率由 Repo3 按功能分组算出，按安装率从低到高列出，不设「较少见」的阈值
+  intent: set_algebra
+  subject_arity: 1
+  channel: C2
+  task_intent: query
+  task_output_kind: group_rows
+  default_metrics:
+  - feature_installation_rate
+  analysis: differentiation
+  params:
+  - name: $subject
+    role: subject_set
+    required: true
+    on_missing: ASK_USER
+    ask: 请指明是哪一款车型（或哪个品牌）。
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 差异化功能
+    - 独有功能
+    - 较少见的功能
+    - 差异化的功能
+  route_priority: 2
+- question_ref: 36
+  text: 目标车型各项指标处于竞品市场的什么分位？
+  text_source: verified
+  domain: D06
+  declared_status: PARTIAL
+  shapes:
+  - S11
+  metric_refs:
+  - sales_volume_since_launch
+  - transaction_price_distribution
+  output_kind: table
+  requires_signoffs:
+  - D1_model_identity
+  - D4_transaction_price
+  - D9_time_window
+  - D11_model_name_variant
+  - D8_launch_date_proxy
+  missing:
+  - launch_date
+  fallback: 成交价的分位数可以直接给出。「上市后 N 个月」这个时间锚点按 D8 取 Model SOP date（口径待签认）；也可以改问：指定时间段内的销量排名。
+  fallback_refs:
+  - 2
+  - 5
+  intent: distribution
+  subject_arity: 0
+  channel: C1
+  task_intent: distribution
+  task_output_kind: distribution
+  default_metrics:
+  - transaction_price_distribution
+  params:
+  - name: $time
+    role: time_window
+    required: true
+    on_missing: ASK_USER
+    ask: 请指定时间范围，比如「今年」「2025 年」或「最近 12 个月」。
+  route_all:
+  - - 分位
+    - 四分位
+    - 中位数
+  route_priority: 2
+- question_ref: 37
+  text: 高销量车型有哪些可验证的共同特征？
+  text_source: verified
+  domain: D07
+  declared_status: OUT_OF_SCOPE
+  fallback: 高销量车型的共同特征汇总（特征汇总和阈值筛选）属于 D07 诊断与发现。Question Scope V1.1 注明 D07 不在 Super AI V1.0 的范围内，本期不做。当前可以查询：销量 Top N 车型、车型的功能清单、车型参数。
+  fallback_refs:
+  - 2
+  - 9
+  - 12
+  intent: diagnose
+  channel: C3
+  route_all:
+  - - 共同特征
+    - 共同点
+    - 可验证的共同
+  route_priority: 2
+- question_ref: 38
+  text: 哪些细分市场存在高销量、低供给或配置空白？
+  text_source: verified
+  domain: D07
+  declared_status: OUT_OF_SCOPE
+  fallback: 市场机会与配置空白的筛选（高销量、低供给的阈值筛选）属于 D07 诊断与发现。Question Scope V1.1 注明 D07 不在 Super AI V1.0 的范围内，且「高」「低」的阈值尚未配置。当前可以查询：各细分市场的销量结构、某功能在各细分市场的安装率。
+  fallback_refs:
+  - 4
+  - 18
+  intent: diagnose
+  channel: C3
+  route_all:
+  - - 配置空白
+    - 市场机会
+    - 低供给
+    - 还有机会
+  route_priority: 2
+- question_ref: 39
+  text: 最近哪些车型或品牌出现销量、价格或份额异常？
+  text_source: verified
+  domain: D07
+  declared_status: OUT_OF_SCOPE
+  fallback: 销量、价格、份额的异常发现（同比 / 环比、移动偏差、Z-Score）属于 D07 诊断与发现。Question Scope V1.1 注明 D07 不在 Super AI V1.0 的范围内，本期不做。当前可以查询：同比、环比和移动
+    12 个月趋势。
+  fallback_refs:
+  - 25
+  intent: diagnose
+  channel: C3
+  route_all:
+  - - 异常
+  route_priority: 2
+- question_ref: 40
+  text: 基于历史数据，未来3～6个月销量或功能供给率的基线预测是多少？
+  text_source: verified
+  domain: D08
+  declared_status: OUT_OF_SCOPE
+  hard_rule: NEVER_EMIT_FORECAST_NUMBER
+  fallback: 预测能力在 V2 规划中，当前版本不提供销量预测。 可以提供已发生的历史规律作参考（分月走势、同比、累计）， 但那是历史事实不是预测，答案里不会出现任何预测数字。
+  fallback_refs:
+  - 1
+  - 3
+  - 25
+  note: V1.3 原文：「LLM 不得充当预测器……无预测工具时不得输出任何具体预测数字」。 「预计下跌 18% 左右」这类无生成过程可溯源的数字，是最危险的幻觉形态 —— 因为它看起来最专业。Repo4 的输出后碰撞是这条红线的最后一道保险。
+  intent: forecast
+  channel: C3
+  route_all:
+  - - 预测
+    - 预估
+    - 未来3
+    - 未来6
+    - 未来三
+    - 未来六
+    - 未来 3
+    - 未来 6
+  route_priority: 2

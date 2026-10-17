@@ -1,0 +1,24 @@
+{
+  "task_id": "automotive-package-smoke",
+  "intent": "traverse",
+  "subjects": [{"text": "ModelVersion"}],
+  "filters": [
+    {"field_text": "动力类型", "op": "eq", "value_text": "BEV"},
+    {"field_text": "级别", "op": "eq", "value_text": "A"}
+  ],
+  "relation": {
+    "link_text": "搭载",
+    "direction": "FORWARD",
+    "target_text": "副驾屏",
+    "scope": "counted",
+    "project_to_target": false
+  },
+  "output_kind": "object_list",
+  "capability_ref": "question_10",
+  "question_ref": 10,
+  "security_context": {
+    "principal_id": "package-smoke",
+    "tenant_id": "vida",
+    "roles": ["analyst"]
+  }
+}

@@ -1,0 +1,1 @@
+"""Combination-design adapters."""
