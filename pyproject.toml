@@ -6,10 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "analysis-agent-test"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["pydantic==2.13.4", "PyYAML==6.0.3", "openpyxl==3.1.5", "allpairspy==2.5.1", "anthropic==1.15.0"]
+dependencies = ["pydantic==2.13.4", "PyYAML==6.0.3", "openpyxl==3.1.5"]
 
 [project.optional-dependencies]
-test = ["pytest==8.4.2", "hypothesis==6.170.1"]
+test = ["pytest==8.4.2", "hypothesis==6.170.1", "allpairspy==2.5.1", "anthropic==1.15.0"]
+generation = ["allpairspy==2.5.1", "anthropic==1.15.0"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -17,3 +18,4 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = ["live: calls a real external Agent and is skipped unless ANALYSIS_AGENT_MCP_URL is set"]

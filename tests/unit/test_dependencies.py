@@ -37,12 +37,12 @@ def test_dependency_boundaries_and_dag():
                     assert target.split(".")[2] in {"evaluation", "canonical", "rules", "assets"}
                 if domain == "generation" and ".domains." in target:
                     assert target.split(".")[2] in {"generation", "canonical", "rules"}
+        standard = {"enum", "typing", "logging", "collections", "decimal", "pathlib", "string", "hashlib", "json", "dataclasses", "urllib"}
         if ".common" in module:
             assert not any(target.startswith(("agent_test.domains", "agent_test.application",
                                                "agent_test.presentation",
                                                "agent_test.infrastructure"))
                            for target in imports)
-        standard = {"enum", "typing", "logging", "collections", "decimal", "pathlib", "string", "hashlib", "json"}
         allowed = standard | {"agent_test", "pydantic"}
         if ".infrastructure." in module:
             allowed.update({"yaml", "openpyxl", "json", "xml", "zipfile", "sqlite3", "contextlib"})
