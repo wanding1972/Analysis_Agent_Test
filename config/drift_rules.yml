@@ -1,0 +1,8 @@
+schema_version: "1"
+expected_changes: []
+required_kinds:
+  - capability
+  - semantic
+  - plan
+  - evidence
+  - answer
